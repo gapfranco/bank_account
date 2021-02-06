@@ -24,11 +24,11 @@ defmodule BankAccountWeb.UserController do
 
   def register(conn, params) do
     case Account.create_user(params) do
-      {:referral_code, referral_code} ->
+      {:ok, _user, :referral_code, referral_code} ->
         conn
         |> render("register.json", referral_code: referral_code)
 
-      {:status, status} ->
+      {:ok, _user, :status, status} ->
         conn
         |> render("register.json", status: status)
 

@@ -3,13 +3,30 @@ defmodule BankAccountWeb.UserControllerTest do
 
   alias BankAccount.Account
 
-  @create_attrs %{
-    email: "some@email.com",
-    password: "some password"
+  @complete_attrs %{
+    "cpf" => "465.876.620-56",
+    "email" => "valid@email",
+    "password" => "123123",
+    "name" => "A name",
+    "birth_date" => "1959-02-11",
+    "gender" => "male",
+    "city" => "A city",
+    "state" => "UF",
+    "country" => "Brasil"
+  }
+
+  @partial_attrs %{
+    "cpf" => "465.876.620-56",
+    "password" => "123123"
+  }
+
+  @login_attrs %{
+    "cpf" => "465.876.620-56",
+    "password" => "123123"
   }
 
   def fixture(:user) do
-    {:ok, user} = Account.create_user(@create_attrs)
+    {:ok, user, _, _} = Account.create_user(@complete_attrs)
     user
   end
 
@@ -17,11 +34,11 @@ defmodule BankAccountWeb.UserControllerTest do
     {:ok, conn: put_req_header(conn, "accept", "application/json")}
   end
 
-  describe "sign_in" do
+  describe "login" do
     setup [:create_user]
 
-    test "user can sign in", %{conn: conn} do
-      conn = post(conn, Routes.user_path(conn, :sign_in), @create_attrs)
+    test "user can login", %{conn: conn} do
+      conn = post(conn, Routes.user_path(conn, :login), @login_attrs)
 
       assert %{
                "token" => _token
@@ -29,13 +46,23 @@ defmodule BankAccountWeb.UserControllerTest do
     end
   end
 
-  describe "sign_on" do
-    test "user can sign on", %{conn: conn} do
-      conn = post(conn, Routes.user_path(conn, :sign_on), @create_attrs)
+  describe "register" do
+    test "user can register partially", %{conn: conn} do
+      conn = post(conn, Routes.user_path(conn, :register), @partial_attrs)
 
       assert %{
-               "email" => "some@email.com"
-             } = json_response(conn, 200)["user"]
+               "message" => "Account creation",
+               "status" => "pending"
+             } = json_response(conn, 200)
+    end
+
+    test "user can register completely", %{conn: conn} do
+      conn = post(conn, Routes.user_path(conn, :register), @complete_attrs)
+
+      assert %{
+               "message" => "Account creation",
+               "status" => "complete"
+             } = json_response(conn, 200)
     end
   end
 

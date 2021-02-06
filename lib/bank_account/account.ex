@@ -61,9 +61,9 @@ defmodule BankAccount.Account do
         |> User.referral_changeset(%{"referral_code_gen" => referral_code, "status" => :complete})
         |> Repo.update()
 
-        {:referral_code, referral_code}
+        {:ok, user, :referral_code, referral_code}
       else
-        {:status, "pending"}
+        {:ok, user, :status, "pending"}
       end
     else
       {:error, changeset} -> {:error, changeset}

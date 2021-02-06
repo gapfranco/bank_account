@@ -127,7 +127,6 @@ defmodule BankAccount.Account.User do
   defp hash_password(%Ecto.Changeset{changes: %{password: password}} = changeset) do
     changeset
     |> put_change(:password, Password.hash(password))
-    |> IO.inspect()
   end
 
   defp hash_password(changeset), do: changeset

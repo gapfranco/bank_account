@@ -2,69 +2,64 @@ defmodule BankAccount.AccountTest do
   use BankAccount.DataCase
 
   alias BankAccount.Account
+  alias BankAccount.Account.User
+  alias BankAccount.AES
+  alias BankAccount.HashField
 
-  describe "users" do
-    alias BankAccount.Account.User
-
-    @valid_attrs %{
-      email: "some email",
-      password: "some password",
-      password_hash: "some password_hash"
+  describe "register account" do
+    @pending_attrs %{
+      "cpf" => "465.876.620-56",
+      "password" => "123123",
+      "name" => "A name"
     }
-    @update_attrs %{email: "some updated email", password_hash: "some updated password_hash"}
-    @invalid_attrs %{email: nil, password_hash: nil}
+    @complete_attrs %{
+      "cpf" => "465.876.620-56",
+      "email" => "valid@email",
+      "password" => "123123",
+      "name" => "A name",
+      "birth_date" => "1959-02-11",
+      "gender" => "male",
+      "city" => "A city",
+      "state" => "UF",
+      "country" => "Brasil"
+    }
+    @invalid_attrs %{
+      "cpf" => "465.876.620-56",
+      "password" => "123123",
+      "birth_date" => "erro",
+      "gender" => "erro"
+    }
 
-    def user_fixture(attrs \\ %{}) do
-      {:ok, user} =
-        attrs
-        |> Enum.into(@valid_attrs)
-        |> Account.create_user()
-
-      user |> Map.put(:password, nil)
+    test "create_user/1 with incomplete data creates a user with pending status" do
+      assert {:ok, _, :status, "pending"} = Account.create_user(@pending_attrs)
     end
 
-    test "list_users/0 returns all users" do
-      user = user_fixture()
-      assert Account.list_users() == [user]
-    end
-
-    test "get_user!/1 returns the user with given id" do
-      user = user_fixture()
-      assert Account.get_user!(user.id) == user
-    end
-
-    test "create_user/1 with valid data creates a user" do
-      assert {:ok, %User{} = user} = Account.create_user(@valid_attrs)
-      assert user.email == "some email"
-      assert user.password_hash == "some password_hash"
+    test "create_user/1 with complete data creates a user with complete status" do
+      assert {:ok, _, :referral_code, _referral_code} = Account.create_user(@complete_attrs)
     end
 
     test "create_user/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} = Account.create_user(@invalid_attrs)
     end
+  end
 
-    test "update_user/2 with valid data updates the user" do
-      user = user_fixture()
-      assert {:ok, %User{} = user} = Account.update_user(user, @update_attrs)
-      assert user.email == "some updated email"
-      assert user.password_hash == "some updated password_hash"
+  describe "Verify correct working of encryption and hashing" do
+    setup do
+      Account.create_user(@complete_attrs)
+      :ok
     end
 
-    test "update_user/2 with invalid data returns error changeset" do
-      user = user_fixture()
-      assert {:error, %Ecto.Changeset{}} = Account.update_user(user, @invalid_attrs)
-      assert user == Account.get_user!(user.id)
+    test "can decrypt values of encrypted fields when loaded from database" do
+      found_user = Repo.one(User)
+      assert AES.decrypt(found_user.name) == "A name"
+      assert AES.decrypt(found_user.email) == "valid@email"
+      assert AES.decrypt(found_user.cpf) == "465.876.620-56"
+      assert AES.decrypt(found_user.birth_date) == "1959-02-11"
     end
 
-    test "delete_user/1 deletes the user" do
-      user = user_fixture()
-      assert {:ok, %User{}} = Account.delete_user(user)
-      assert_raise Ecto.NoResultsError, fn -> Account.get_user!(user.id) end
-    end
-
-    test "change_user/1 returns a user changeset" do
-      user = user_fixture()
-      assert %Ecto.Changeset{} = Account.change_user(user)
+    test "can get value of cpf_hash field when loaded from database" do
+      found_user = Repo.one(User)
+      assert found_user.cpf_hash == HashField.hash("465.876.620-56")
     end
   end
 end
