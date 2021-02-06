@@ -13,9 +13,13 @@ defmodule BankAccount.Account do
   @doc """
   Returns the list of referred.
   """
-  def list_referrals(id) do
-    IO.puts(id)
-    Repo.all(User)
+  def list_referrals(referral) do
+    query =
+      from u in "users",
+        where: u.referral_code == ^referral,
+        select: %{id: u.id, name: u.name}
+
+    Repo.all(query)
   end
 
   @doc """
@@ -35,7 +39,7 @@ defmodule BankAccount.Account do
       case Repo.get_by(User, cpf_hash: cpf_hash) do
         nil ->
           %User{}
-          |> User.changeset(attrs)
+          |> User.changeset_with_password(attrs)
           |> Repo.insert()
 
         user ->

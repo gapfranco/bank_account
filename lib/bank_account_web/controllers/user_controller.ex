@@ -4,14 +4,15 @@ defmodule BankAccountWeb.UserController do
   alias BankAccount.Account
   # alias BankAccount.Account.User
   alias BankAccount.Password
+  alias BankAccount.AES
 
   action_fallback BankAccountWeb.FallbackController
 
-  def sign_in(conn, %{"cpf" => cpf, "password" => password} = _params) do
+  def login(conn, %{"cpf" => cpf, "password" => password} = _params) do
     case Password.token_signin(cpf, password) do
       {:ok, %{token: jwt_token, user: _user}} ->
         conn
-        |> render("sign_in.json", token: jwt_token)
+        |> render("login.json", token: jwt_token)
 
       {:error, message} ->
         conn
@@ -21,25 +22,35 @@ defmodule BankAccountWeb.UserController do
     end
   end
 
-  def sign_on(conn, params) do
+  def register(conn, params) do
     case Account.create_user(params) do
       {:referral_code, referral_code} ->
         conn
-        |> render("sign_on.json", referral_code: referral_code)
+        |> render("register.json", referral_code: referral_code)
 
       {:status, status} ->
         conn
-        |> render("sign_on.json", status: status)
+        |> render("register.json", status: status)
 
       {:error, changeset} ->
         conn
         |> put_status(:unprocessable_entity)
         |> put_view(BankAccountWeb.ErrorView)
         |> render("400.json", changeset: changeset)
+    end
+  end
 
-        # {:error, message} ->
-        #   conn
-        #   |> render("sign_on.json", message: message)
+  def referrals_list(conn, _params) do
+    user = Guardian.Plug.current_resource(conn)
+
+    if user.referral_code_gen do
+      referrals =
+        Account.list_referrals(user.referral_code_gen)
+        |> Enum.map(fn elem -> %{id: elem.id, name: AES.decrypt(elem.name)} end)
+
+      render(conn, "referrals.json", referrals: referrals)
+    else
+      render(conn, "referrals_error.json", message: "Account register not completed")
     end
   end
 end

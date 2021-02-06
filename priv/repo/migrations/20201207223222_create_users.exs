@@ -12,8 +12,8 @@ defmodule BankAccount.Repo.Migrations.CreateUsers do
       add :city, :string
       add :state, :string
       add :country, :string
+      add :referral_code, :string
       add :referral_code_gen, :string
-      add :referral_code_inf, :string
       add :password, :string
       add :status, :string, null: false, default: "pending"
 
@@ -22,6 +22,6 @@ defmodule BankAccount.Repo.Migrations.CreateUsers do
 
     create unique_index(:users, [:cpf_hash])
     create unique_index(:users, [:referral_code_gen])
-    create index(:users, [:referral_code_inf])
+    create index(:users, [:referral_code])
   end
 end

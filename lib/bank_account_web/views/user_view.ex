@@ -1,7 +1,7 @@
 defmodule BankAccountWeb.UserView do
   use BankAccountWeb, :view
 
-  def render("sign_on.json", %{referral_code: referral_code}) do
+  def render("register.json", %{referral_code: referral_code}) do
     %{
       message: "Account creation",
       status: :complete,
@@ -9,20 +9,40 @@ defmodule BankAccountWeb.UserView do
     }
   end
 
-  def render("sign_on.json", %{status: status}) do
+  def render("register.json", %{status: status}) do
     %{
       message: "Account creation",
       status: status
     }
   end
 
-  def render("sign_on.json", %{message: message}) do
+  def render("register.json", %{message: message}) do
     %{
       message: message
     }
   end
 
-  def render("sign_in.json", %{token: jwt_token}) do
-    %{token: jwt_token}
+  def render("login.json", %{token: jwt_token}) do
+    %{
+      message: "Connected",
+      token: jwt_token
+    }
+  end
+
+  def render("referrals.json", %{referrals: referrals}) do
+    %{data: render_many(referrals, BankAccountWeb.UserView, "user.json")}
+  end
+
+  def render("user.json", %{user: user}) do
+    %{
+      id: user.id,
+      name: user.name
+    }
+  end
+
+  def render("referrals_error.json", %{message: message}) do
+    %{
+      message: message
+    }
   end
 end

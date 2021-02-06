@@ -12,12 +12,13 @@ defmodule BankAccountWeb.Router do
 
   scope "/api", BankAccountWeb do
     pipe_through :api
-    post "/users/sign_in", UserController, :sign_in
-    post "/users/sign_on", UserController, :sign_on
+    post "/login", UserController, :login
+    post "/register", UserController, :register
   end
 
   scope "/api", BankAccountWeb do
     pipe_through [:api, :jwt_authenticated]
+    get "/referrals", UserController, :referrals_list
   end
 
   # Enables LiveDashboard only for development

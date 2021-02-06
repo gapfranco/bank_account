@@ -46,6 +46,8 @@ defmodule BankAccount.MixProject do
       {:pbkdf2_elixir, "~> 1.2"},
       {:guardian, "~> 2.1"},
       {:poison, "~> 3.1"},
+      {:timex, "~> 3.6"},
+      {:cpf, "~> 1.1"},
       {:plug_cowboy, "~> 2.0"}
     ]
   end

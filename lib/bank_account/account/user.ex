@@ -26,8 +26,8 @@ defmodule BankAccount.Account.User do
     field :city, :string
     field :state, :string
     field :country, :string
+    field :referral_code, :string
     field :referral_code_gen, :string
-    field :referral_code_inf, :string
     field :status, StatusEnum
     field :password, :string
 
@@ -38,8 +38,6 @@ defmodule BankAccount.Account.User do
   def changeset(user, attrs) do
     user
     |> cast(attrs, [
-      :cpf,
-      :cpf_hash,
       :email,
       :name,
       :birth_date,
@@ -47,15 +45,26 @@ defmodule BankAccount.Account.User do
       :city,
       :state,
       :country,
-      :referral_code_inf,
-      :password
+      :password,
+      :referral_code
     ])
     |> validate_required([:cpf])
+    |> validate_date(:birth_date)
+    |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/, message: "Invalid e-mail")
     |> hash_password()
-    |> encrypt_cpf()
     |> encrypt_email()
     |> encrypt_name()
     |> encrypt_birth_date()
+  end
+
+  @doc false
+  def changeset_with_password(user, attrs) do
+    user
+    |> cast(attrs, [:cpf, :cpf_hash, :password])
+    |> validate_required([:cpf, :password])
+    |> validate_cpf(:cpf)
+    |> encrypt_cpf()
+    |> changeset(attrs)
   end
 
   def referral_changeset(user, attrs) do
@@ -64,6 +73,16 @@ defmodule BankAccount.Account.User do
       :referral_code_gen,
       :status
     ])
+  end
+
+  def validate_cpf(changeset, field) do
+    validate_change(changeset, field, fn field, value ->
+      if CPF.valid?(value) do
+        []
+      else
+        [{field, "invalid CPF: #{value}"}]
+      end
+    end)
   end
 
   defp encrypt_cpf(%Ecto.Changeset{changes: %{cpf: cpf}} = changeset) do
@@ -87,6 +106,16 @@ defmodule BankAccount.Account.User do
   end
 
   defp encrypt_name(changeset), do: changeset
+
+  def validate_date(changeset, field) do
+    validate_change(changeset, field, fn field, value ->
+      with {:ok, _data} <- Timex.parse(value, "{ISOdate}") do
+        []
+      else
+        _ -> [{field, "invalid date"}]
+      end
+    end)
+  end
 
   defp encrypt_birth_date(%Ecto.Changeset{changes: %{birth_date: birth_date}} = changeset) do
     changeset
