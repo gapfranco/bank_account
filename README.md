@@ -37,7 +37,11 @@ Os campos protegidos são encriptados usando **`Advanced Encryption Standard (AE
 Foi criado um campo **`cpf_hash`** derivado do cpf, unicamente para se fazer buscas de forma eficiente.
 Esse algotitmo de hash é determinístico e rápido e deve _sempre_ retornar o mesmo valor.
 
-O hash da senha usa o algoritmo _pbkdf2_, pseudo-aleatório e mais lento.
+O hash da senha usa o algoritmo _pbkdf2_, pseudo-aleatório e mais lento, mas que gera valores diferentes
+por chamada, evitando ataques de adivinhação da senha por repetição de tentativas de hash.
+
+As chaves para encriptação AES devem ser informadas na variável de ambiente **`ENCRYPTION_KEYS`** em produção e nunca
+registradas em repositórios git. Ver repositório acima para detalhes.
 
 Os campos que devem ser encriptados foram definidos como **`:binary`** e não **`:string`**,
 por razões de eficiência
