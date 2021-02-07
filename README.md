@@ -15,7 +15,7 @@ todos os dados estejam devidamente preenchidos.
 
 - Os campos **`cpf`**, **`email`**, **`name`**, e **`birth_date`** são encriptados no banco de dados.
 
-- A conta será considerada **`pending`** até todos os campos serem preenchidos de forma válida. O usuário
+- A conta será considerada **`pending`** até que todos os campos sejam preenchidos de forma válida. O usuário
   poderá fazer várias requisições parciais de registro até completar. Quando completar, a conta passará
   para o status **`completed`**.
 
@@ -23,8 +23,8 @@ todos os dados estejam devidamente preenchidos.
   Poderá ser enviado a outras pessoas, como convite para que também façam seu cadastro.
 
 - Um usuário pode consultar quem se cadastrou com seu código de indicação (_referral code_) com uma chamada de API.
-  Essa chamada só poderá ser por usuário autenticado. Para se autenticar, fazer uma chamada de _login_ passando seu **`CPF`**
-  e senha. Se a conexão for bem sucedida, vai retornar um token **`JWT`**, que poderá ser usado nas chamadas autenticada.
+  Essa chamada só poderá ser feita por usuário autenticado. Para se autenticar, fazer a chamada de _login_, passando o **`CPF`**
+  e senha. Se a conexão for bem sucedida, retornará um token **`JWT`**, que poderá ser usado nas chamadas autenticada.
 
 ## Implementação
 
@@ -49,13 +49,13 @@ Para rodar localmente:
 
 - Instalar as dependências com `mix deps.get`
 - Criar e e migrar o banco de dados com `mix ecto.setup`.
-- Iniciar o endpoint Phoenix com `mix phx.server`
+- Iniciar o serviço Phoenix com `mix phx.server`
 
 Acessar os endpoints com um cliente API no endereço `localhost:4000`.
 
 ## Modelagem de dados
 
-As seguintes entidades estão definidas:
+As seguintes entidades foram definidas:
 
 ### Users
 
@@ -86,7 +86,7 @@ Tabela de usuários
 
 ## Registro
 
-O registro é feito com a chamada `POST /api/register`.
+O registro é feito com a chamada **`POST /api/register`**.
 
 O corpo da requisição deverá ter a seguinte estrutura:
 
@@ -105,10 +105,10 @@ O corpo da requisição deverá ter a seguinte estrutura:
 }
 ```
 
-O campo **`cpf`** é sempre obrigatório pois identifica o usuário. O campo **`password`** de senha
+O campo **`cpf`** é sempre obrigatório, pois identifica o usuário. O campo **`password`** de senha
 é obrigatório apenas na primeira chamada, para poder criar um registro utilizável para autenticação.
 
-As seguintes validação são feitas:
+As seguintes validações serão feitas:
 
 - _cpf_ deve ser válido
 - _birth_date_ deve ser uma data válida no formato AAAA-MM-DD
@@ -178,7 +178,7 @@ Quando algum outro campo não for válido retornará um ou mais das seguintes me
 }
 ```
 
-Não havendo erros e se todos os campos forem informados vai retornar:
+Não havendo erros e tendo informado todos os campos vai retornar:
 
 ```
 {
@@ -199,11 +199,21 @@ O _status_ é **`complete`** e **`referral_code`** é o codigo de indicação ge
 > Se for desejável usar apenas números, basta alterar a linha 11 do
 > módulo **`BankAccount.Randomizer`** de:
 >
-> `(alphabets <> String.downcase(alphabets) <> numbers)`
+> ```
+>
+>   (alphabets <> String.downcase(alphabets) <> numbers)
+>   |> String.split("", trim: true)
+>
+> ```
 >
 > para:
 >
-> elixir`numbers`
+> ```
+>
+>   numbers
+>   |> String.split("", trim: true)
+>
+> ```
 
 Se nem todos os campos tiverem sido informados, vai retornar:
 
@@ -218,7 +228,7 @@ O _status_ ainda é **`pending`**.
 
 ## Conexão e autenticação
 
-O conexão é feita com a chamada `POST /api/login`.
+O conexão é feita com a chamada **`POST /api/login`**.
 
 O corpo da requisição deverá ter a seguinte estrutura:
 
@@ -251,12 +261,12 @@ Se houver erro vai retornar:
 
 ## Visialização de indicações
 
-O consulta é feita com a chamada `GET /api/referrals`.
+O consulta é feita com a chamada **`GET /api/referrals`**.
 
 O usuário deve estar autenticado e com o registro completo. A autenticação é comprovada pela presença
 de um **`Bearer token`** **`JWT`** na requisição, retornado pelo chamada de login.
 
-Se estiver com registro completo vai listar os registros que usaram o seu código de indicação:
+Se estiver com registro completo, vai listar os registros que usaram o seu código de indicação:
 
 ```
 {
@@ -285,7 +295,7 @@ Se não estiver conectado vai responder com:
 }
 ```
 
-Se não tiver o registro completo vai responder com:
+Se o registro da conta não estiver completo vai retornar:
 
 ```
 {
