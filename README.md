@@ -2,30 +2,25 @@
 
 ## Sumário
 
-Projeto de API REST em Elixir/Phonix, modelando um sistema de abertura de contas bacárias.
+API REST em Elixir/Phoenix, modelando um sistema de abertura de contas bacárias.
 
 ## Funcionalidades
 
-A criação de uma conta poderá acontecer em etapas: a partir de um CPF, o(a) potencial cliente informa dados (através de uma ou várias requisições), e desta forma a abertura da conta ficará pendente até que todos os dados estejam devidamente preenchidos.
+A criação de uma conta poderá acontecer em etapas: a partir de um **`CPF`**, o(a) potencial cliente informa dados (através de uma ou várias requisições), e desta forma a abertura da conta ficará pendente até que todos os dados estejam devidamente preenchidos.
 
-- Os seguintes campos estão definidos: cpf (obrigatório), name, email​, birth_date, gender, city, state, country, referral_code
+- Campos definidos: **`cpf`**, **`password`**, **`name`**, **`email`**​, **`birth_date`**, **`gender`**, **`city`**, **`state`**, **`country`**, **`referral_code`**
 
-- Os campos cpf, email, name, e birth_date serão encriptados no banco de dados.
+- Os campos **`cpf`**, **`email`**, **`name`**, e **`birth_date`** são encriptados no banco de dados.
 
-- A conta será considerada _pending_ até todos os campos serem preenchidos de forma válida. O usuário
-  poderá fazer várias requisições parciais até completar. Quando completar a conta passara'para o status _completed_
+- A conta será considerada **`pending`** até todos os campos serem preenchidos de forma válida. O usuário
+  poderá fazer várias requisições parciais até completar. Quando completar a conta passara'para o status **`completed`**
 
 - Quando completar todos os campos, o usuário receberá um código de 8 dígitos (referral_code) que poderá enviar
   a outras pessoas como convite para que também façam seu cadastro.
 
-- Há uma requisição definida para se consultar as contas criadas a partir de uma determinado usuário pelo seu
-  _referral code_
-
-- Autenticação da API com JWT
-
-- Endpoint para autenticação (sign-in)
-
-- Todos os demais endpoints exigem autenticação por token JWT
+- Um usuário pode consultar quem se cadastrou com seu código de indicação (_referral code_) com uma chamada de API. Essa chamada só
+  pode ser feita se o usuário estiver autenticado. Para se autenticar um usuário deve fazer uma chamada de _login_ passando seu **`CPF`**
+  e senha. Se a conexão for bem sucedida, vai retornar um toke **`JWT`** que poderá ser usado nas chamadaautenticada.
 
 ## Implementação
 
@@ -33,13 +28,13 @@ A encriptação de dados foi implementada usando técnicas derivadas deste repos
 
 https://github.com/dwyl/phoenix-ecto-encryption-example
 
-Os campos protegisdos são encriptados usando Advanced Encryption Standard (AES).
+Os campos protegidos são encriptados usando **`Advanced Encryption Standard (AES)`**.
 
-Foi criado um campo _cpf_hash_ derivado do cpf, unicamente para se fazer buscas de forma eficiente. O algotitmo de hash é determinístico e rápido e deve _sempre_ retornar o mesmo valor.
+Foi criado um campo **`cpf_hash`** derivado do cpf, unicamente para se fazer buscas de forma eficiente. Esse algotitmo de hash é determinístico e rápido e deve _sempre_ retornar o mesmo valor.
 
-O hash da senha usa o algoritmo _pbkdf2_ pseudo-aleatório e mais lento.
+O hash da senha usa o algoritmo _pbkdf2_, pseudo-aleatório e mais lento.
 
-Os campos que devem ser encriptados foram definidos como :binary e não :string, por razões de eficiência (ver o artigo https://dba.stackexchange.com/questions/56934/what-is-the-best-way-to-store-a-lot-of-user-encrypted-data).
+Os campos que devem ser encriptados foram definidos como **`:binary`** e não **`:string`**, por razões de eficiência (ver o artigo https://dba.stackexchange.com/questions/56934/what-is-the-best-way-to-store-a-lot-of-user-encrypted-data).
 
 ## Instalação
 
@@ -71,8 +66,8 @@ Tabela de usuários
   "city": string,
   "state": string,
   "country": string,
+  "referral_code": string,
   "referral_code_gen": string,
-  "referral_code_inf": string,
   "status": string,
   "password_hash": string,
   "inserted_at": string,
@@ -84,22 +79,16 @@ Tabela de usuários
 
 **Autenticação**
 
-- [Novo usuário (sign-on)](#sign-on)
-- [Conectar (sign-in)](#sign-in)
+- [Nova conta (register)](#register)
+- [Conectar (login)](#login)
 
-## Autenticação
+## register
 
-Para usar a API é preciso criar um usuário (sign-on) e conectar-se (sign-in).
-A autenticação gera um token JWT que deverá ser incluido nas chamadas dos demais
-endpoints para autenticar a solicitação.
-
-## sign-on
-
-Cria um novo usuário.
+Registra uma novo conta.
 
 ### Request
 
-`POST /api/sign_on`
+`POST /api/register`
 
 ### Body
 
@@ -169,13 +158,13 @@ Nesses casos, a chamada retorna:
 }
 ```
 
-## sign-in
+## login
 
 Conectar-se ao serviço
 
 ### Request
 
-`POST /api/sign_in`
+`POST /api/login`
 
 ### Body
 
@@ -183,7 +172,7 @@ JSON com e-mail do usuário e senha.
 
 ```
 {
-  "email": "eu@algo.com",
+  "cpf": "999.999.999-99",
   "password": "secreto",
 }
 ```
@@ -194,13 +183,14 @@ JSON com o token JWT.
 
 ```
 {
+  "message": "Connected",
   "token": "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJvZmZlcnMiLCJleHAiOjE2MDk4Njc0MTAsImlhdCI6MTYwNzQ0ODIxMCwiaXNzIjoib2ZmZXJzIiwianRpIjoiODAyNjQwNDEtODBjNS00NWIzLWJkNjctNGI3ZGFlYjAxNDFjIiwibmJmIjoxNjA3NDQ4MjA5LCJzdWIiOiIxOSIsInR5cCI6ImFjY2VzcyJ9.GGmy0jj-wkCgnyWU7mCLOD3h1zxga5T_kJQSBnFQB68jYspyIqN9r42YcsCutGPrhBtNRRFa5dZkDiZeSaTm0g"
 }
 ```
 
 ### Erros
 
-Ocorrerá erro se o usuário não existir ou a senha vor inválida.
+Ocorrerá erro se a conta não existir ou a senha vor inválida.
 Nesses casos, a chamada retorna:
 
 ```
@@ -213,31 +203,31 @@ Nesses casos, a chamada retorna:
 
 ### Request
 
-`GET /api/referrals/:id`
-
-:id é o código da indicação
+`GET /api/referrals`
 
 ### Response
 
-JSON com os dados cadastrados.
+JSON com a lista de contas convidadas pelo usuário atual (logado).
 
 ```
 {
   "data": {
     "id": 1,
     "name": "Zé das Couves"
+  },
+  "data": {
+    "id": 5,
+    "name": "Maria do Carmo"
   }
 }
 ```
 
 ### Erros
 
-Se ocorrer algum erro ele será mostrado no retorno. Por exemplo:
+Se o cadastro do usuário atual não estiver completo retorna erro::
 
 ```
 {
-  "errors": {
-    "detail": "Not Found"
-  }
+    "message": "Account register not completed"
 }
 ```
