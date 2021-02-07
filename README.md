@@ -53,7 +53,7 @@ Para rodar localmente:
 
 Acessar os endpoints com um cliente API no endereço `localhost:4000`.
 
-## Modelagem dos dados
+## Modelagem de dados
 
 As seguintes entidades estão definidas:
 
@@ -84,7 +84,7 @@ Tabela de usuários
 
 ## Descrição do uso
 
-### Registro
+## Registro
 
 O registro é feito com a chamada `POST /api/register`.
 
@@ -190,6 +190,21 @@ Não havendo erros e se todos os campos forem informados vai retornar:
 
 O _status_ é **`complete`** e **`referral_code`** é o codigo de indicação gerado.
 
+> **`Sobre o Referral Code`**
+>
+> O referral code é um código gerado aleatoriamente com 8 caracteres
+> entre letras maiúsculas, minúsculas e algarismos.
+> Optei por usar letras e algaritmos para minimizar a possibilidade de
+> se gerar códigos duplicados (62^8 combinações em vez de 10ˆ8).
+> Se for desejável usar apenas números, basta alterar a linha 11 do
+> módulo **`BankAccount.Randomizer`** de:
+>
+> `(alphabets <> String.downcase(alphabets) <> numbers)`
+>
+> para:
+>
+> elixir`numbers`
+
 Se nem todos os campos tiverem sido informados, vai retornar:
 
 ```
@@ -201,7 +216,7 @@ Se nem todos os campos tiverem sido informados, vai retornar:
 
 O _status_ ainda é **`pending`**.
 
-### Conexão e autenticação
+## Conexão e autenticação
 
 O conexão é feita com a chamada `POST /api/login`.
 
@@ -234,7 +249,7 @@ Se houver erro vai retornar:
 }
 ```
 
-### Visialização de indicações
+## Visialização de indicações
 
 O consulta é feita com a chamada `GET /api/referrals`.
 
@@ -280,7 +295,7 @@ Se não tiver o registro completo vai responder com:
 
 ## Como contribuir?
 
-Este é um projeto totalmente livre que aceita contribuições via pull requests no GitHub. Este documento tem a responsabilidade de alinhar as contribuições de acordo com os padrões estabelecidos no mesmo. Em caso de dúvidas, [abra uma issue](https://github.com/iuricode/README-template/issues/new).
+Este é um projeto totalmente livre que aceita contribuições via pull requests no GitHub. Este documento tem a responsabilidade de alinhar as contribuições de acordo com os padrões estabelecidos no mesmo. Em caso de dúvidas, abra uma issue.
 
 ### Primeiros passos
 
