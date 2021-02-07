@@ -32,6 +32,10 @@ defmodule BankAccountWeb.UserController do
         conn
         |> render("register.json", status: status)
 
+      {:status, status} ->
+        conn
+        |> render("register.json", status: status)
+
       {:error, changeset} ->
         conn
         |> put_status(:unprocessable_entity)

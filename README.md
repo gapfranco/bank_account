@@ -6,21 +6,25 @@ API REST em Elixir/Phoenix, modelando um sistema de abertura de contas bacárias
 
 ## Funcionalidades
 
-A criação de uma conta poderá acontecer em etapas: a partir de um **`CPF`**, o(a) potencial cliente informa dados (através de uma ou várias requisições), e desta forma a abertura da conta ficará pendente até que todos os dados estejam devidamente preenchidos.
+A criação de uma conta poderá acontecer em etapas: a partir de um **`CPF`**, o(a) potencial cliente informa os
+dados (através de uma ou várias requisições), e desta forma a abertura da conta ficará pendente até que
+todos os dados estejam devidamente preenchidos.
 
-- Campos definidos: **`cpf`**, **`password`**, **`name`**, **`email`**​, **`birth_date`**, **`gender`**, **`city`**, **`state`**, **`country`**, **`referral_code`**
+- Campos definidos: **`cpf`**, **`password`**, **`email`**, **`name`**, **`birth_date`**, **`gender`**,
+  **`city`**, **`state`**, **`country`**, **`referral_code`**
 
 - Os campos **`cpf`**, **`email`**, **`name`**, e **`birth_date`** são encriptados no banco de dados.
 
 - A conta será considerada **`pending`** até todos os campos serem preenchidos de forma válida. O usuário
-  poderá fazer várias requisições parciais até completar. Quando completar a conta passara'para o status **`completed`**
+  poderá fazer várias requisições parciais de registro até completar. Quando completar, a conta passará
+  para o status **`completed`**.
 
-- Quando completar todos os campos, o usuário receberá um código de 8 dígitos (referral_code) que poderá enviar
-  a outras pessoas como convite para que também façam seu cadastro.
+- Ao completar todos os campos, um código de 8 dígitos será gerado e apresentado (_referral code_).
+  Poderá ser enviado a outras pessoas, como convite para que também façam seu cadastro.
 
-- Um usuário pode consultar quem se cadastrou com seu código de indicação (_referral code_) com uma chamada de API. Essa chamada só
-  pode ser feita se o usuário estiver autenticado. Para se autenticar um usuário deve fazer uma chamada de _login_ passando seu **`CPF`**
-  e senha. Se a conexão for bem sucedida, vai retornar um toke **`JWT`** que poderá ser usado nas chamadaautenticada.
+- Um usuário pode consultar quem se cadastrou com seu código de indicação (_referral code_) com uma chamada de API.
+  Essa chamada só poderá ser por usuário autenticado. Para se autenticar, fazer uma chamada de _login_ passando seu **`CPF`**
+  e senha. Se a conexão for bem sucedida, vai retornar um token **`JWT`**, que poderá ser usado nas chamadas autenticada.
 
 ## Implementação
 
@@ -30,11 +34,14 @@ https://github.com/dwyl/phoenix-ecto-encryption-example
 
 Os campos protegidos são encriptados usando **`Advanced Encryption Standard (AES)`**.
 
-Foi criado um campo **`cpf_hash`** derivado do cpf, unicamente para se fazer buscas de forma eficiente. Esse algotitmo de hash é determinístico e rápido e deve _sempre_ retornar o mesmo valor.
+Foi criado um campo **`cpf_hash`** derivado do cpf, unicamente para se fazer buscas de forma eficiente.
+Esse algotitmo de hash é determinístico e rápido e deve _sempre_ retornar o mesmo valor.
 
 O hash da senha usa o algoritmo _pbkdf2_, pseudo-aleatório e mais lento.
 
-Os campos que devem ser encriptados foram definidos como **`:binary`** e não **`:string`**, por razões de eficiência (ver o artigo https://dba.stackexchange.com/questions/56934/what-is-the-best-way-to-store-a-lot-of-user-encrypted-data).
+Os campos que devem ser encriptados foram definidos como **`:binary`** e não **`:string`**,
+por razões de eficiência
+(ver o artigo https://dba.stackexchange.com/questions/56934/what-is-the-best-way-to-store-a-lot-of-user-encrypted-data).
 
 ## Instalação
 
@@ -44,7 +51,7 @@ Para rodar localmente:
 - Criar e e migrar o banco de dados com `mix ecto.setup`.
 - Iniciar o endpoint Phoenix com `mix phx.server`
 
-Acessar os endpoints com um cliente API como o CURL ou Insomnia no endereço `localhost:4000`.
+Acessar os endpoints com um cliente API no endereço `localhost:4000`.
 
 ## Modelagem dos dados
 
@@ -75,123 +82,151 @@ Tabela de usuários
 }
 ```
 
-## Chamadas de API
+## Descrição do uso
 
-**Autenticação**
+### Registro
 
-- [Nova conta (register)](#register)
-- [Conectar (login)](#login)
+O registro é feito com a chamada `POST /api/register`.
 
-## register
-
-Registra uma novo conta.
-
-### Request
-
-`POST /api/register`
-
-### Body
-
-JSON com e-mail do usuário e senha. A senha deve ter pelo menos 6 caracteres.
+O corpo da requisição deverá ter a seguinte estrutura:
 
 ```
 {
-  "email": "eu@algo.com",
-  "password": "secreto",
+  "cpf": "073.463.248-70",
+  "name": "Nome do usuário",
+  "password": "123123",
+  "birth_date": "1959-02-11",
+  "city": "Ribeirão Preto",
+  "country": "Brasil",
+  "email": "eu@email.com",
+  "state": "SP",
+  "gender": "male",
+  "referral_code": "ZCRIX6T3"
 }
 ```
 
-### Response
+O campo **`cpf`** é sempre obrigatório pois identifica o usuário. O campo **`password`** de senha
+é obrigatório apenas na primeira chamada, para poder criar um registro utilizável para autenticação.
 
-JSON com campos do evento criado.
+As seguintes validação são feitas:
 
-```
-{
-  "user": {
-    "email": "eu@algo.com",
-    "id": 123
-  }
-}
-```
+- _cpf_ deve ser válido
+- _birth_date_ deve ser uma data válida no formato AAAA-MM-DD
+- _gender_ deve ser um gênero válido (_female_ ou _male_)
+- _email_ deve ter um formato válido (com _@_ no meio)
 
-### Erros
+O campo _referral_code_, se informado, vai vincular essa conta à conta de alguém como indicação.
+Se informar um código errado, que não existe, nenhum erro será gerado, apenas não vai fazer a
+vinculação.
 
-Ocorrerá erro se o usuário já existir, se não informar uma senha ou se a senha tiver menos de 6 caracteres.
-Nesses casos, a chamada retorna:
+### Retorno
+
+Se for uma primeira chamada e não tiver informado a senha (_password_):
 
 ```
 {
   "errors": [
+    {
+      "key": "password",
+      "message": [
+          "can't be blank"
+      ]
+    }
+  ]
+}
+```
+
+Quando o _cpf_ não for informado:
+
+```
+{
+  "message": "Account creation",
+  "status": "CPF missing"
+}
+```
+
+Quando algum outro campo não for válido retornará um ou mais das seguintes mensagens:
+
+```
+{
+  "errors": [
+    {
+      "key": "birth_date",
+      "message": [
+        "invalid date"
+      ]
+    },
+    {
+      "key": "cpf",
+      "message": [
+        "invalid CPF: 123.444.777-99"
+      ]
+    },
     {
       "key": "email",
       "message": [
-        "has already been taken"
+        "Invalid e-mail"
       ]
-    }
-  ]
-}
-```
-
-```
-{
-  "errors": [
+    },
     {
-      "key": "password",
+      "key": "gender",
       "message": [
-        "can't be blank"
+        "is invalid"
       ]
     }
   ]
 }
 ```
 
-```
-{
-  "errors": [
-    {
-      "key": "password",
-      "message": [
-        "should be at least 6 character(s)"
-      ]
-    }
-  ]
-}
-```
-
-## login
-
-Conectar-se ao serviço
-
-### Request
-
-`POST /api/login`
-
-### Body
-
-JSON com e-mail do usuário e senha.
+Não havendo erros e se todos os campos forem informados vai retornar:
 
 ```
 {
-  "cpf": "999.999.999-99",
-  "password": "secreto",
+  "message": "Account creation",
+  "referral_code": "ZCRII6T3",
+  "status": "complete"
 }
 ```
 
-### Response
+O _status_ é **`complete`** e **`referral_code`** é o codigo de indicação gerado.
 
-JSON com o token JWT.
+Se nem todos os campos tiverem sido informados, vai retornar:
+
+```
+{
+  "message": "Account creation",
+  "status": "pending"
+}
+```
+
+O _status_ ainda é **`pending`**.
+
+### Conexão e autenticação
+
+O conexão é feita com a chamada `POST /api/login`.
+
+O corpo da requisição deverá ter a seguinte estrutura:
+
+```
+{
+  "cpf": "123.444.555-77",
+  "password": "123123"
+}
+```
+
+Se existir a conta com esse _cpf_ e senha, vai retornar:
 
 ```
 {
   "message": "Connected",
-  "token": "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJvZmZlcnMiLCJleHAiOjE2MDk4Njc0MTAsImlhdCI6MTYwNzQ0ODIxMCwiaXNzIjoib2ZmZXJzIiwianRpIjoiODAyNjQwNDEtODBjNS00NWIzLWJkNjctNGI3ZGFlYjAxNDFjIiwibmJmIjoxNjA3NDQ4MjA5LCJzdWIiOiIxOSIsInR5cCI6ImFjY2VzcyJ9.GGmy0jj-wkCgnyWU7mCLOD3h1zxga5T_kJQSBnFQB68jYspyIqN9r42YcsCutGPrhBtNRRFa5dZkDiZeSaTm0g"
+  "token": "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJiYW5rX2FjY291bnQiLCJleHAiOjE2MTUxMjA1MTMsImlhdCI6MTYxMjcwMTMxMywiaXNzIjoiYmFua19hY2NvdW50IiwianRpIjoiNjc5ZmJhYTYtYjJiNC00ODY0LWI0MGYtZjE2MDk0Y2VmMDU0IiwibmJmIjoxNjEyNzAxMzEyLCJzdWIiOiIyIiwidHlwIjoiYWNjZXNzIn0.rWGibQfd_aa-FVv4miecy7Q-uxo__jdqkmtBbVQlVmLVwQaJCBU4ys6RbawWuzXUDe33riau2KA0ri00l2jCvw"
 }
 ```
 
-### Erros
+O campo **`token`** deverá ser usado para fazer as chamadas que exigem autenticação.
+Determina quem é o usuário e se está autorizado.
 
-Ocorrerá erro se a conta não existir ou a senha vor inválida.
-Nesses casos, a chamada retorna:
+Se houver erro vai retornar:
 
 ```
 {
@@ -199,35 +234,65 @@ Nesses casos, a chamada retorna:
 }
 ```
 
-## Consultar indicações
+### Visialização de indicações
 
-### Request
+O consulta é feita com a chamada `GET /api/referrals`.
 
-`GET /api/referrals`
+O usuário deve estar autenticado e com o registro completo. A autenticação é comprovada pela presença
+de um **`Bearer token`** **`JWT`** na requisição, retornado pelo chamada de login.
 
-### Response
-
-JSON com a lista de contas convidadas pelo usuário atual (logado).
-
-```
-{
-  "data": {
-    "id": 1,
-    "name": "Zé das Couves"
-  },
-  "data": {
-    "id": 5,
-    "name": "Maria do Carmo"
-  }
-}
-```
-
-### Erros
-
-Se o cadastro do usuário atual não estiver completo retorna erro::
+Se estiver com registro completo vai listar os registros que usaram o seu código de indicação:
 
 ```
 {
-    "message": "Account register not completed"
+  "data": [
+    {
+      "id": 3,
+      "name": "Margarida"
+    },
+    {
+      "id": 4,
+      "name": "Aurora"
+    },
+    {
+      "id": 5,
+      "name": "Gregório"
+    }
+  ]
 }
 ```
+
+Se não estiver conectado vai responder com:
+
+```
+{
+  "message": "Account register not completed"
+}
+```
+
+Se não tiver o registro completo vai responder com:
+
+```
+{
+  "message": "Account register not completed"
+}
+```
+
+## Como contribuir?
+
+Este é um projeto totalmente livre que aceita contribuições via pull requests no GitHub. Este documento tem a responsabilidade de alinhar as contribuições de acordo com os padrões estabelecidos no mesmo. Em caso de dúvidas, [abra uma issue](https://github.com/iuricode/README-template/issues/new).
+
+### Primeiros passos
+
+1. Fork este repositório
+2. Envie seus commits em português
+3. Solicite a pull request
+4. Insira um pequeno sobre o que você colocou
+
+## Contatos
+
+- Author - [Gonçalo Franco](https://linkedin.com/in/gapfranco)
+
+## License
+
+Este projeto é licenciado como [MIT licensed](LICENSE).
