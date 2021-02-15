@@ -4,6 +4,10 @@
 # This configuration file is loaded before any dependency and
 # is restricted to this project.
 
+#
+# ALTERACAO
+#
+
 # General application configuration
 use Mix.Config
 

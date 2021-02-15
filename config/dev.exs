@@ -46,6 +46,8 @@ config :bank_account, BankAccountWeb.Endpoint,
 # configured to run both http and https servers on
 # different ports.
 
+###### DEV MUDOU TAMBEM
+
 # Do not include metadata nor timestamps in development logs
 config :logger, :console, format: "[$level] $message\n"
 
